@@ -69,12 +69,13 @@ class PhotoClass:
 
         return [min_x, min_y, max_x, max_y]
 
-    def segmentAll(self, bndboxClasses, sub_width, sub_height, frames):
+    def segmentAll(self, bndboxClasses, sub_width, sub_height, frames, bndboxClasses_original):
 
         if len(bndboxClasses) == 0:
             return
 
         bndboxClass = bndboxClasses.pop()
+        bndboxClasses_original.append(copy.deepcopy(bndboxClass))
 
         [min_x, min_y, max_x, max_y] = self.segment(bndboxClass, sub_width, sub_height)
         frames.append([min_x, min_y, max_x, max_y])
@@ -85,12 +86,37 @@ class PhotoClass:
 
             if b_inside:
 
+                bndboxClass = bndboxClasses.pop()
+                bndboxClasses_original.append(bndboxClass)
                 continue
             else:
 
-                self.segmentAll(bndboxClasses, sub_width, sub_height, frames)
+                self.segmentAll(bndboxClasses, sub_width, sub_height, frames, bndboxClasses_original)
 
-        return frames
+        return frames, bndboxClasses_original
+
+    def exportXml(self, frames, bndboxClasses, tree):
+
+        for i in range(len(frames)):
+
+            tree_copy = copy.deepcopy(tree)
+
+            root = tree_copy.getroot()
+            #root_copy = copy.deepcopy(root)
+
+            for obj in root.findall('object'):
+
+                bndboxXml = obj.find('bndbox')
+                xmin = int(bndboxXml.find('xmin').text)
+                ymin = int(bndboxXml.find('ymin').text)
+                xmax = int(bndboxXml.find('xmax').text)
+                ymax = int(bndboxXml.find('ymax').text)
+
+                if not (xmin > frames[i][0] and ymin > frames[i][1] and xmax < frames[i][2] and ymax < frames[i][3]):
+
+                    root.remove(obj)
+
+            tree_copy.write('output' + str(i) + ".xml")
 
 
 
@@ -99,8 +125,7 @@ class PhotoClass:
 
     def IsInsideFrame(self, bndboxClass, min_x, min_y, max_x, max_y):
 
-        return min_x < bndboxClass.xmin & min_y < bndboxClass.ymin & max_x > bndboxClass.xmax & max_y > bndboxClass.ymax
-
+        return min_x <= bndboxClass.xmin and min_y <= bndboxClass.ymin and max_x >= bndboxClass.xmax and max_y >= bndboxClass.ymax
 
 
 
@@ -169,9 +194,12 @@ if __name__ == '__main__':
     sub_height = height / 2
 
     frames = []
-    frames = photoClass.segmentAll(bndboxClasses, sub_width, sub_height, frames)
+    frames, bndboxClasses = photoClass.segmentAll(bndboxClasses, sub_width, sub_height, frames, [])
 
     print frames
+
+
+    photoClass.exportXml(frames, bndboxClasses, tree)
 
 
 
