@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import copy
 from PIL import Image
+import ntpath
 
 
 class PhotoClass:
@@ -95,7 +96,7 @@ class PhotoClass:
 
         return frames, bndboxClasses_original
 
-    def exportXml(self, frames, bndboxClasses, tree):
+    def exportXml(self, frames, bndboxClasses, tree, imageName, xmlpath):
 
         for i in range(len(frames)):
 
@@ -134,16 +135,17 @@ class PhotoClass:
 
             # root.set('updated', 'yes')
 
+            tail_imageName = ntpath.split(imageName)[1]
+            tree_copy.write(xmlpath + "/" + ntpath.splitext(tail_imageName)[0] + str(i) + ".xml")
 
-            tree_copy.write('output' + str(i) + ".xml")
 
+    def exportSubImage(self, cropSize, parentPath, imageName, index):
 
-    def exportSubImage(self, cropSize, imageName, index):
-
+        tail_imageName = ntpath.split(imageName)[1]
         img = Image.open(imageName)
         area = cropSize
         cropped_image = img.crop(area)
-        cropped_image.save(imageName + str(index) + ".jpg")
+        cropped_image.save(parentPath + "/" + ntpath.splitext(tail_imageName)[0] + str(index) + ".jpg", 'JPEG')
 
 
 
@@ -224,15 +226,18 @@ if __name__ == '__main__':
 
 
     # export xml
-    photoClass.exportXml(frames, bndboxClasses, tree)
+    imageName = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages/1.JPGresize.jpg"
+    xmlPath = "/home/zhida/Documents/Code/labelImg/labelImg/newxml"
+    photoClass.exportXml(frames, bndboxClasses, tree, imageName, xmlPath)
 
     # export sub images
-    imageName = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages/1.JPGresize.jpg"
+
+    parentPath = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/newJPEGImages"
 
     for i in range(len(frames)):
 
         cropsize = (frames[i][0], frames[i][1], frames[i][2], frames[i][3])
-        photoClass.exportSubImage(cropsize, imageName, i)
+        photoClass.exportSubImage(cropsize, parentPath, imageName, i)
 
 
 
