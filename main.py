@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 import copy
-
+from PIL import Image
 
 
 class PhotoClass:
@@ -115,11 +115,35 @@ class PhotoClass:
                 if not (xmin > frames[i][0] and ymin > frames[i][1] and xmax < frames[i][2] and ymax < frames[i][3]):
 
                     root.remove(obj)
+                else:
+
+                    xmin = xmin - frames[i][0]
+                    ymin = ymin - frames[i][1]
+                    xmax = xmax - frames[i][0]
+                    ymax = ymax - frames[i][1]
+
+                bndboxXml.find('xmin').text = str(xmin)
+                bndboxXml.find('ymin').text = str(ymin)
+                bndboxXml.find('xmax').text = str(xmax)
+                bndboxXml.find('ymax').text = str(ymax)
+
+                # bndboxXml.set('updated', 'yes')
+
+            root.find('size').find('width').text = str(frames[i][2] - frames[i][0])
+            root.find('size').find('height').text = str(frames[i][3] - frames[i][1])
+
+            # root.set('updated', 'yes')
+
 
             tree_copy.write('output' + str(i) + ".xml")
 
 
+    def exportSubImage(self, cropSize, imageName, index):
 
+        img = Image.open(imageName)
+        area = cropSize
+        cropped_image = img.crop(area)
+        cropped_image.save(imageName + str(index) + ".jpg")
 
 
 
@@ -199,7 +223,16 @@ if __name__ == '__main__':
     print frames
 
 
+    # export xml
     photoClass.exportXml(frames, bndboxClasses, tree)
+
+    # export sub images
+    imageName = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages/1.JPGresize.jpg"
+
+    for i in range(len(frames)):
+
+        cropsize = (frames[i][0], frames[i][1], frames[i][2], frames[i][3])
+        photoClass.exportSubImage(cropsize, imageName, i)
 
 
 
