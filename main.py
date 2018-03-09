@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import copy
 from PIL import Image
 import ntpath
+import os
 
 
 class PhotoClass:
@@ -142,6 +143,7 @@ class PhotoClass:
     def exportSubImage(self, cropSize, parentPath, imageName, index):
 
         tail_imageName = ntpath.split(imageName)[1]
+        print imageName
         img = Image.open(imageName)
         area = cropSize
         cropped_image = img.crop(area)
@@ -175,69 +177,81 @@ class BndboxClass:
 
 if __name__ == '__main__':
 
-    source = "/home/zhida/Documents/Code/labelImg/labelImg/xml/1.JPGresize.xml"
-    tree = ET.parse(source)
-    root = tree.getroot()
+    imageDirectory = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages"
+    xmlDirectory = "/home/zhida/Documents/Code/labelImg/labelImg/xml"
 
-    print root.tag
+    newXmlDirectory = "/home/zhida/Documents/Code/labelImg/labelImg/newxml"
+    newImageDirectory = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/newJPEGImages"
 
-    # element array
-    bndboxs = root.findall("./object/bndbox")
-    bndboxClasses = []
+    for xmlName in os.listdir(xmlDirectory):
 
-
-    # fetch bndboxs
-
-    for i in range(len(bndboxs)):
-
-        bndbox = bndboxs[i]
-
-        xmin = bndbox.find("xmin").text
-        ymin = bndbox.find("ymin").text
-        xmax = bndbox.find("xmax").text
-        ymax = bndbox.find("ymax").text
-
-        bndboxClass = BndboxClass(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
-
-        bndboxClasses.append(copy.deepcopy(bndboxClass))
-
-    for i in range(len(bndboxClasses)):
-        print(bndboxClasses[i])
+        #xmlName = "/home/zhida/Documents/Code/labelImg/labelImg/xml/7.JPGresize.xml"
+        #imageName = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages/7.JPGresize.jpg"
+        imageName =  imageDirectory + "/" + ntpath.splitext(xmlName)[0] + ".jpg"
 
 
-    # fetch photo info
 
-    sizeXml = root.find("size")
-    width = int(sizeXml.find("width").text)
-    height = int(sizeXml.find("height").text)
-    depth = int(sizeXml.find("depth").text)
+        tree = ET.parse(xmlDirectory + "/" + xmlName)
+        root = tree.getroot()
 
-    photoClass = PhotoClass(width=width, height=height, depth=depth)
+        print root.tag
 
-    print(photoClass)
-
-    sub_width = width / 2
-    sub_height = height / 2
-
-    frames = []
-    frames, bndboxClasses = photoClass.segmentAll(bndboxClasses, sub_width, sub_height, frames, [])
-
-    print frames
+        # element array
+        bndboxs = root.findall("./object/bndbox")
+        bndboxClasses = []
 
 
-    # export xml
-    imageName = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/JPEGImages/1.JPGresize.jpg"
-    xmlPath = "/home/zhida/Documents/Code/labelImg/labelImg/newxml"
-    photoClass.exportXml(frames, bndboxClasses, tree, imageName, xmlPath)
+        # fetch bndboxs
 
-    # export sub images
+        for i in range(len(bndboxs)):
 
-    parentPath = "/home/zhida/Documents/Code/pva-faster-rcnn/data/VOCdevkit2007/VOC2007/newJPEGImages"
+            bndbox = bndboxs[i]
 
-    for i in range(len(frames)):
+            xmin = bndbox.find("xmin").text
+            ymin = bndbox.find("ymin").text
+            xmax = bndbox.find("xmax").text
+            ymax = bndbox.find("ymax").text
 
-        cropsize = (frames[i][0], frames[i][1], frames[i][2], frames[i][3])
-        photoClass.exportSubImage(cropsize, parentPath, imageName, i)
+            bndboxClass = BndboxClass(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+
+            bndboxClasses.append(copy.deepcopy(bndboxClass))
+
+        for i in range(len(bndboxClasses)):
+            print(bndboxClasses[i])
+
+
+        # fetch photo info
+
+        sizeXml = root.find("size")
+        width = int(sizeXml.find("width").text)
+        height = int(sizeXml.find("height").text)
+        depth = int(sizeXml.find("depth").text)
+
+        photoClass = PhotoClass(width=width, height=height, depth=depth)
+
+        print(photoClass)
+
+        sub_width = width / 2
+        sub_height = height / 2
+
+        frames = []
+        frames, bndboxClasses = photoClass.segmentAll(bndboxClasses, sub_width, sub_height, frames, [])
+
+        print frames
+
+
+        # export xml
+
+        photoClass.exportXml(frames, bndboxClasses, tree, imageName, newXmlDirectory)
+
+        # export sub images
+
+
+
+        for i in range(len(frames)):
+
+            cropsize = (frames[i][0], frames[i][1], frames[i][2], frames[i][3])
+            photoClass.exportSubImage(cropsize, newImageDirectory, imageName, i)
 
 
 
